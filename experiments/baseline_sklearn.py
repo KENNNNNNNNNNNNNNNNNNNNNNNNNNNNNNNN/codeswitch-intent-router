@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -32,6 +34,7 @@ for i, name in enumerate(labels):
     print(f"  {i} = {name}")
 print()
 
+saved = []
 for split_name in ["validation", "test"]:
     part = df[df.split == split_name].copy()
     part["pred"] = model.predict(part["text"])
@@ -46,3 +49,9 @@ for split_name in ["validation", "test"]:
         acc = accuracy_score(group.intent, group.pred)
         print(f"  {name}: n={len(group)}, accuracy={acc:.2f}")
     print()
+    saved.append(part[["id", "text", "intent", "density", "bucket", "pred"]].assign(split=split_name))
+
+# Save predictions so later stages can compare models sentence by sentence.
+Path("results").mkdir(exist_ok=True)
+pd.concat(saved).to_csv("results/baseline_predictions.csv", index=False)
+print("saved predictions to results/baseline_predictions.csv")
