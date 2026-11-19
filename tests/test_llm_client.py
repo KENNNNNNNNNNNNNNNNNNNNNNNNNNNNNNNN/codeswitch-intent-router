@@ -80,10 +80,17 @@ def test_zero_shot_prompt_lists_every_intent_and_ends_with_the_text():
     assert len(messages) == 2
 
 
-def test_examples_become_earlier_turns():
+def test_examples_go_in_system_prompt_without_confidence():
     messages = build_messages("new text", examples=[("ex one", "clearance")])
-    assert [m["role"] for m in messages] == ["system", "user", "assistant", "user"]
-    assert '"clearance"' in messages[2]["content"]
+    assert [m["role"] for m in messages] == ["system", "user"]
+    assert "Message: ex one\nIntent: clearance" in messages[0]["content"]
+    assert messages[0]["content"].count("confidence") == build_messages("x")[0][
+        "content"].count("confidence")
+
+
+def test_zero_shot_prompt_is_unchanged_by_few_shot_support():
+    # Stage 2 results were produced with this exact system prompt.
+    assert "Labelled examples" not in build_messages("x")[0]["content"]
 
 
 # ---- call_model / classify with the fake client --------------------------

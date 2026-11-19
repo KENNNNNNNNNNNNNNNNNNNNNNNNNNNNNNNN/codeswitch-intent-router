@@ -46,17 +46,18 @@ def intent_list_text(intents=INTENTS):
 def build_messages(text, examples=None, intents=INTENTS):
     """Chat messages for one classification.
 
-    examples: optional list of (text, intent) pairs shown as earlier turns.
-    Zero-shot passes none; Stage 3 passes few-shot examples.
+    examples: optional list of (text, intent) pairs. Zero-shot passes none,
+    and then the prompt is exactly the Stage 2 prompt. Few-shot examples are
+    listed in the system prompt with their intent only, no confidence, so
+    the examples cannot teach the model what confidence number to give.
     """
-    messages = [{"role": "system",
-                 "content": SYSTEM_PROMPT.format(intent_list=intent_list_text(intents))}]
-    for ex_text, ex_intent in examples or []:
-        messages.append({"role": "user", "content": ex_text})
-        messages.append({"role": "assistant",
-                         "content": json.dumps({"intent": ex_intent, "confidence": 1.0})})
-    messages.append({"role": "user", "content": text})
-    return messages
+    system = SYSTEM_PROMPT.format(intent_list=intent_list_text(intents))
+    if examples:
+        shown = "\n".join(f"Message: {ex_text}\nIntent: {ex_intent}"
+                          for ex_text, ex_intent in examples)
+        system += f"\n\nLabelled examples:\n\n{shown}"
+    return [{"role": "system", "content": system},
+            {"role": "user", "content": text}]
 
 
 def parse_reply(reply, intents=INTENTS):
