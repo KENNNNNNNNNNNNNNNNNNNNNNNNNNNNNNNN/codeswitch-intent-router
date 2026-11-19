@@ -1,0 +1,36 @@
+id,text,intent,density,bucket,pred,split
+14,Paano kumuha ng copy ng grades ko?,student_records,0.2857142857142857,2 low-mixed (0-0.3],student_records,validation
+21,Paano ko malalaman kung officially enrolled na ako?,enrollment_status,0.25,2 low-mixed (0-0.3],enrollment_status,validation
+26,May changes ba sa schedule ng classes ko?,class_schedule,0.375,3 high-mixed (>0.3),class_schedule,validation
+32,Paano mag-request ng official copy ng grades?,student_records,0.42857142857142855,3 high-mixed (>0.3),document_request,validation
+37,Nakatala na ba ako ngayong semestre?,enrollment_status,0.0,1 single-language (0),enrollment_status,validation
+38,Paano ko makikita kung enrolled na ako ngayong semester?,enrollment_status,0.2222222222222222,2 low-mixed (0-0.3],enrollment_status,validation
+59,I need my diploma copy kasi mag-aapply ako ng trabaho.,document_request,0.4,3 high-mixed (>0.3),document_request,validation
+63,Is my class schedule final for this semester?,class_schedule,0.0,1 single-language (0),class_schedule,validation
+65,I already paid my tuition pero hindi pa rin updated sa system.,tuition_payment,0.4166666666666667,3 high-mixed (>0.3),tuition_payment,validation
+71,My clearance is still pending kasi may unpaid balance daw ako.,clearance,0.36363636363636365,3 high-mixed (>0.3),clearance,validation
+74,Has my enrollment been approved by the registrar?,enrollment_status,0.0,1 single-language (0),enrollment_status,validation
+77,Maaari ba akong humingi ng kopya ng aking katibayan ng pagtatapos?,document_request,0.0,1 single-language (0),tuition_payment,validation
+82,Maaari ko bang makita ang listahan ng mga klase ko ngayong semestre?,class_schedule,0.0,1 single-language (0),class_schedule,validation
+86,Tumatanggap ba kayo ng bayad sa pamamagitan ng bangko?,tuition_payment,0.0,1 single-language (0),tuition_payment,validation
+87,Can I pay my tuition in installments?,tuition_payment,0.0,1 single-language (0),tuition_payment,validation
+104,What documents can I request from the registrar's office?,document_request,0.0,1 single-language (0),document_request,validation
+115,Hindi tama yung subject na nakalagay sa transcript ko.,student_records,0.2222222222222222,2 low-mixed (0-0.3],student_records,validation
+118,Na-sign na ba ng library yung clearance form ko?,clearance,0.4444444444444444,3 high-mixed (>0.3),clearance,validation
+119,"I already settled my balance, so bakit pending pa rin ang clearance ko?",clearance,0.38461538461538464,3 high-mixed (>0.3),clearance,validation
+13,I need a copy of my academic records.,student_records,0.0,1 single-language (0),student_records,test
+18,Gusto kong malaman ang status ng aking clearance.,clearance,0.25,2 low-mixed (0-0.3],clearance,test
+28,Are there other payment methods for tuition?,tuition_payment,0.0,1 single-language (0),tuition_payment,test
+34,What requirements do I need to complete my clearance?,clearance,0.0,1 single-language (0),clearance,test
+41,Can I request ng good moral certificate online?,document_request,0.125,2 low-mixed (0-0.3],document_request,test
+45,Where can I find my room assignment?,class_schedule,0.0,1 single-language (0),class_schedule,test
+46,Hanggang kailan ang huling araw ng pagbabayad ng matrikula?,tuition_payment,0.0,1 single-language (0),tuition_payment,test
+56,"Hindi ko makita yung enrollment status ko sa portal, is it normal?",enrollment_status,0.5,3 high-mixed (>0.3),enrollment_status,test
+57,Pwede bang malaman kung kumpleto na ang enrollment ko?,enrollment_status,0.1111111111111111,2 low-mixed (0-0.3],enrollment_status,test
+69,Can I get a certified true copy of my records?,student_records,0.0,1 single-language (0),student_records,test
+94,What offices do I need to visit for my clearance?,clearance,0.0,1 single-language (0),clearance,test
+102,Pwede po bang i-request yung certificate of grades via email?,document_request,0.4,3 high-mixed (>0.3),document_request,test
+106,Naka-online ba or face-to-face ang klase ko sa Huwebes?,class_schedule,0.3333333333333333,3 high-mixed (>0.3),class_schedule,test
+107,Please send me my schedule kasi nawala yung copy ko.,class_schedule,0.4,3 high-mixed (>0.3),class_schedule,test
+110,Nag-deposit na ako sa bank pero hindi pa nagre-reflect yung payment.,tuition_payment,0.36363636363636365,3 high-mixed (>0.3),enrollment_status,test
+113,Sino ang dapat kong kausapin kung may kulang sa aking talaan ng mga marka?,student_records,0.0,1 single-language (0),student_records,test
