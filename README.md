@@ -39,8 +39,9 @@ where a sensible human-handoff threshold lies.
 - Pandas
 - Scikit-learn
 - Groq API (`openai/gpt-oss-120b`, free tier)
+- FastAPI + Uvicorn, with a plain HTML/CSS/JavaScript front end (web app)
 - Matplotlib
-- Streamlit
+- Streamlit (original Day 7 demo)
 - Pytest
 
 ## Project Status
@@ -55,6 +56,21 @@ This is a compressed 7-day MVP. It does not claim to test the full research hypo
 - Day 5: Few-shot ablation (random, English-only, density-matched, max-diversity). Done.
 - Day 6: Confidence vs accuracy, and the human-handoff threshold. Done.
 - Day 7: Streamlit demo and this write-up. Done.
+
+After the MVP, the project was extended for general use (the research
+results above are unchanged by these additions):
+
+- **Tagger v2** (`src/tagger_v2.py`): contractions (`Ako'y`, `sa'yo`, `'cause`),
+  subtitle word-frequency lists, Tagalog affixes and reduplication, Taglish
+  verbs (`nagsho-shopping`, `magre-review`), a slang list, and an optional
+  Tagalog dictionary built from Wiktionary.
+- **Any intent list**: the campus-registrar intents stay as the tested preset;
+  customer-support and barangay-health presets are untested examples, and users
+  can type their own categories.
+- **Translator**: every analysed message is also rewritten in plain English and
+  plain Tagalog.
+- **Formal writing tips** for raw/daw and rin/din.
+- **Web app** with four pages: Home, How it works, Simulation, Evidence.
 
 ## How to Run
 
@@ -84,19 +100,60 @@ Then open a new terminal.
 | Few-shot (Day 5) | `python experiments/llm_few_shot.py` | `llm_fewshot_<strategy>_test_<model>.csv`, `ablation_test_<model>.csv` |
 | Handoff (Day 6) | `python experiments/confidence_handoff.py` | `confidence_by_bucket.csv`, `handoff_coverage.csv`, `handoff_threshold.csv`, `calibration_plot.png` |
 | Demo (Day 7) | `streamlit run app.py` | |
+| Tagger check | `python experiments/check_tagger_v2.py` | prints scores against the gold token sets |
+| Try from the terminal | `python experiments/try_general.py "Sana all may jowa" --preset customer_support --translate english` | |
 
 LLM scripts save each answer as it arrives and skip sentences already in the
 results file, so an interrupted run can be restarted without repeating calls.
 
+### Web app
+
+```
+uvicorn server:app --port 8000
+```
+
+Then open http://localhost:8000. Stop it with `Ctrl+C`. The server only listens
+on your own computer, and the API key never reaches the browser.
+
+- **Simulation** makes **2 model calls per message**: one for the intent,
+  confidence and any words the tagger could not place, and one for the English
+  and Tagalog translations. Results are cached, so the same message again is free.
+- With "Don't sort, just analyse the language", the first call is skipped when
+  every word is already known.
+- **Evidence** reads the result files in `results/` and the gold token sets, so
+  it always shows the numbers from the latest runs.
+
+### Optional: rebuild the word lists
+
+The word lists in `data/lexicon/` are committed, so this is only needed to
+update them.
+
+- Frequency lists: `python experiments/build_lexicon.py` (downloads from GitHub).
+- Tagalog dictionary: download the Tagalog JSONL file from
+  https://kaikki.org/dictionary/Tagalog/ (about 150 MB; keep it outside the repo), then
+  `python experiments/build_tl_dictionary.py "<path to the .jsonl file>"`.
+
 ## Code Layout
 
-- `src/tagger.py`, `src/density.py`: rule-based token language tagger and code-switch density.
-- `src/llm_client.py`: prompt, Groq call with retries, reply parsing (intent + confidence).
+Research (Days 1–7):
+
+- `src/tagger.py`, `src/density.py`: v1 rule-based token tagger and code-switch density.
+- `src/llm_client.py`: prompts, Groq call with retries, reply parsing (intent + confidence).
 - `src/fewshot.py`: few-shot example selectors (train split only, one example per intent).
 - `src/evaluate.py`: accuracy, macro F1 and 95% Wilson intervals, overall and per density bucket.
 - `src/calibration.py`: reliability table, AUROC, coverage vs accuracy, threshold selection.
 - `src/router.py`: one message in, intent + confidence + density + handoff decision out.
-- `app.py`: Streamlit demo.
+- `app.py`: Streamlit demo (Day 7).
+
+General use (after Day 7):
+
+- `src/tagger_v2.py`: tagger v2 (contractions, word lists, affixes, slang, dictionary).
+- `src/translate.py`: plain-English and plain-Tagalog versions from one model call.
+- `src/grammar_hints.py`: raw/daw and rin/din suggestions for formal writing.
+- `server.py`: FastAPI server for the web app; `web/`: pages, styles, script and
+  the generated background (`tools/make_backdrop.py`).
+- `data/lexicon/`: word lists and their sources and licences (`SOURCE.md`).
+- `docs/annotation_guidelines.md` (v0.2) and `docs/tagalog_morphology_notes.md`.
 
 ## Dataset
 
@@ -186,6 +243,30 @@ everywhere. The data is not able to test whether confidence tracks accuracy
 as density increases: there are too few errors, and they come from a label
 boundary rather than from code-switching.
 
+### After Day 7: token tagger
+
+Share of words tagged correctly against hand-labelled gold tokens
+(`python experiments/check_tagger_v2.py`).
+
+| Gold set | v1 (Day 3) | v2, word lists only | v2 + slang + Taglish verbs | + Wiktionary dictionary |
+|---|---|---|---|---|
+| Registrar, 10 sentences | 97/97 | 97/97 | 97/97 | 97/97 |
+| Everyday Taglish, 23 sentences | 101/136* | 174/177 | 175/177 | 175/177 |
+| Verbs and slang, 20 sentences | – | 134/162 (23 unknown) | 153/162 (8 unknown) | **160/162 (1 unknown)** |
+
+\* v1 cannot split contractions, so 5 sentences could not be scored at all.
+
+- v2 tags all 120 registrar sentences exactly as v1 does, so the Day 1–7
+  densities and results are unchanged.
+- **These scores are optimistic.** The everyday and verbs-and-slang sentences
+  and their gold tags were written while the tagger was being built, and still
+  need review by a native speaker. A fresh set written by someone else is the
+  honest test.
+- The dictionary covers 98,575 word forms from 40,946 Wiktionary entries
+  (1,847 English borrowings and 5,391 proper names left out). It is only used
+  for words the frequency lists don't know, so it cannot turn a common English
+  word into Tagalog.
+
 ## Limitations
 
 - The dataset is small and synthetic, written by a small number of authors.
@@ -209,3 +290,28 @@ boundary rather than from code-switching.
 - The intent descriptions in the prompt were written by the project authors
   and affect the results.
 - The demo is for research only and is not suitable for real student use.
+
+Additional limitations of the general-use extension:
+
+- Only the campus-registrar intents were evaluated. The customer-support and
+  barangay-health presets, custom intent lists, and the handoff threshold on
+  anything other than the registrar preset are untested.
+- Translations are not evaluated anywhere in this project. The app labels them
+  as machine translations not checked by a person.
+- The slang list (`data/lexicon/slang.csv`) is a draft: many rows come from
+  general knowledge rather than a cited source, and slang changes quickly.
+- Names that are also common English words (for example "Ana", "Ben") are
+  tagged English, not NE.
+- Some complex verb forms (for example "nagkukuwentuhan", where the root's
+  vowel changes) are still not recognised and are left to the model.
+- The raw/daw and rin/din tips follow the formal KWF rule. Casual writing often
+  ignores it, so they are suggestions, not corrections; no tip is given after
+  words ending in "d", where sources differ.
+- Each analysed message costs 2 model calls on the free tier, so heavy use can
+  hit Groq's rate limits.
+
+## Licences of included data
+
+- `data/lexicon/tl_freq.txt`, `en_freq.txt`: FrequencyWords (OpenSubtitles 2018), CC BY-SA 4.0.
+- `data/lexicon/tl_dict.txt`: derived from English Wiktionary via kaikki.org, CC BY-SA.
+- See `data/lexicon/SOURCE.md` for details. These licences cover only those files.
