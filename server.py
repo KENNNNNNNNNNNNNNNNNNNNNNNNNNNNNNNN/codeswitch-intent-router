@@ -1,15 +1,21 @@
-"""Web app for the Taglish Router. Run from the repo root:
+"""Web app for the Taglish Router.
+
+On your computer, from the repo root:
 
     uvicorn server:app --port 8000
 
-then open http://localhost:8000. The API key stays on this server; the
-browser never sees it. The server only listens on this computer.
+then open http://localhost:8000. Online, Vercel finds this file and its `app`
+automatically (see README, "Deploying to Vercel"). Either way the API key stays
+on the server; the browser never sees it.
 """
+import os
+import time
+from collections import defaultdict, deque
 from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -25,6 +31,29 @@ RESULTS = ROOT / "results"
 MODEL_SLUG = DEFAULT_MODEL.replace("/", "_")
 
 app = FastAPI(title="Taglish Router")
+
+# A visitor waits at most about one retry for the model, so a busy free tier
+# gives a quick "try again" instead of a page that hangs.
+CALL_OPTIONS = {"max_retries": 1, "wait_seconds": 2.0}
+
+# Per-visitor speed limit for the model endpoints. Each analysed message uses
+# two requests (analyse + translate), so 20 per minute is about 10 messages.
+# Kept in memory, so it is per server instance: a light safeguard against
+# scripts, not a hard quota.
+RATE_LIMIT = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
+_recent = defaultdict(deque)
+
+
+def visitor_limit(request: Request):
+    forwarded = request.headers.get("x-forwarded-for", "")
+    visitor = forwarded.split(",")[0].strip() or (request.client.host if request.client else "?")
+    now = time.monotonic()
+    times = _recent[visitor]
+    while times and now - times[0] > 60:
+        times.popleft()
+    if len(times) >= RATE_LIMIT:
+        raise HTTPException(429, "Too many messages in a short time. Wait a minute and try again.")
+    times.append(now)
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 
 
@@ -75,7 +104,8 @@ def get_client():
 def api_error(err):
     name = type(err).__name__
     if name == "RateLimitError":
-        return HTTPException(429, "The model's free-tier limit was reached. Wait a minute and try again.")
+        return HTTPException(429, "The model's free daily or per-minute limit was reached. "
+                                  "Try again in a minute; daily limits reset at 8:00 AM Philippine time.")
     if name == "AuthenticationError":
         return HTTPException(503, "The Groq API key was rejected. Store a valid key and restart the server.")
     return HTTPException(502, f"The model call failed ({name}).")
@@ -91,10 +121,10 @@ class AnalyzeIn(BaseModel):
 @lru_cache(maxsize=256)
 def _analyze_cached(text, intents_key):
     intents = dict(intents_key) if intents_key else None
-    return analyze_general(text, get_client(), intents)
+    return analyze_general(text, get_client(), intents, **CALL_OPTIONS)
 
 
-@app.post("/api/analyze")
+@app.post("/api/analyze", dependencies=[Depends(visitor_limit)])
 def analyze(body: AnalyzeIn):
     text = body.text.strip()
     if not text:
@@ -139,10 +169,10 @@ class TranslateIn(BaseModel):
 
 @lru_cache(maxsize=256)
 def _translate_cached(text):
-    return translate_both(get_client(), text)
+    return translate_both(get_client(), text, **CALL_OPTIONS)
 
 
-@app.post("/api/translate")
+@app.post("/api/translate", dependencies=[Depends(visitor_limit)])
 def translate_endpoint(body: TranslateIn):
     """Plain English and plain Tagalog versions, from one model call."""
     text = body.text.strip()

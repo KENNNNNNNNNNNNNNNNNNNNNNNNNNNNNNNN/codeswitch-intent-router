@@ -79,7 +79,7 @@ Requires Python 3.10+.
 ```
 python -m venv .venv
 .venv\Scripts\Activate.ps1          # Windows PowerShell (macOS/Linux: source .venv/bin/activate)
-pip install -r requirements.txt
+pip install -r requirements-dev.txt  # everything; requirements.txt is only the website's packages
 python -m pytest -q                  # tests; the LLM is mocked, no API key needed
 ```
 
@@ -122,6 +122,30 @@ on your own computer, and the API key never reaches the browser.
   every word is already known.
 - **Evidence** reads the result files in `results/` and the gold token sets, so
   it always shows the numbers from the latest runs.
+
+### Deploying to Vercel
+
+The web app runs on Vercel's free Hobby plan (personal, non-commercial use).
+Vercel finds `server.py` and its `app` automatically and installs only the slim
+`requirements.txt` (about 130 MB of packages; the limit is 500 MB).
+`.vercelignore` leaves out the old Streamlit `app.py`, tests and experiments.
+
+1. Sign in at https://vercel.com with your GitHub account.
+2. **Add New → Project**, then import `codeswitch-intent-router`.
+3. Under **Environment Variables**, add `GROQ_API_KEY` with your Groq key.
+   Optional: `RATE_LIMIT_PER_MINUTE` (default 20 requests per visitor per minute).
+4. Click **Deploy**. Every later `git push` to `main` redeploys automatically.
+
+Things to know about the public site:
+
+- Every visitor uses **your** Groq free-tier quota, 2 calls per message. When it
+  runs out, the site answers "limit reached" for everyone until it resets
+  (daily limits reset at 00:00 UTC, 8:00 AM Philippine time). Groq never
+  charges on the free tier.
+- The per-visitor limit is kept in memory on each server instance, so it slows
+  down scripts but is not a hard cap.
+- Messages typed on the site are sent to Groq. The Simulation page asks
+  visitors not to type personal details.
 
 ### Optional: rebuild the word lists
 
@@ -311,7 +335,7 @@ Additional limitations of the general-use extension:
   ignores it, so they are suggestions, not corrections; no tip is given after
   words ending in "d", where sources differ.
 - Each analysed message costs 2 model calls on the free tier, so heavy use can
-  hit Groq's rate limits.
+  hit Groq's rate limits. On the public site all visitors share one quota.
 
 ## Licences of included data
 

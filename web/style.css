@@ -230,6 +230,7 @@ select option { background: #000; }
 .control .hint { margin: 0.4rem 0 0; }
 input[type="range"] { width: 100%; accent-color: var(--violet); }
 output { color: var(--gold-soft); font-variant-numeric: tabular-nums; }
+.privacy { margin: 0 0 1rem; }
 .form-error { color: #ffb4a8; margin: 0.9rem 0 0; }
 
 /* ---- results ---- */

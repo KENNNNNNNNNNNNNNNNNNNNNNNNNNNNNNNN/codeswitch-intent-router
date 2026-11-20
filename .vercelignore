@@ -1,0 +1,10 @@
+# Files Vercel does not need for the website.
+# app.py is the old Streamlit demo: Vercel would otherwise try it as the entrypoint.
+app.py
+tests/
+experiments/
+docs/
+tools/
+.pytest_cache/
+__pycache__/
+*.pyc

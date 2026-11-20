@@ -6,7 +6,6 @@ are always computed the same way.
 import math
 
 import pandas as pd
-from sklearn.metrics import accuracy_score, f1_score
 
 BUCKETS = ["1 single-language (0)", "2 low-mixed (0-0.3]", "3 high-mixed (>0.3)"]
 
@@ -40,6 +39,9 @@ def score(true, pred):
     Missing predictions (None/NaN, for example an unparseable LLM reply)
     count as wrong.
     """
+    # Imported here so the web app (which only needs bucket()) runs without scikit-learn.
+    from sklearn.metrics import accuracy_score, f1_score
+
     true = pd.Series(list(true), dtype=object).reset_index(drop=True)
     pred = pd.Series(list(pred), dtype=object).reset_index(drop=True).fillna("<none>")
     n = len(true)

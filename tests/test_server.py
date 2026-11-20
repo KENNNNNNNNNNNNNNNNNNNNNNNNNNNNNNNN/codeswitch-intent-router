@@ -17,6 +17,7 @@ def fake_client(reply):
 @pytest.fixture
 def api(monkeypatch):
     def use(reply):
+        server._recent.clear()
         server.client.cache_clear()
         server._analyze_cached.cache_clear()
         server._translate_cached.cache_clear()
@@ -95,6 +96,7 @@ def test_translate_returns_both_languages_from_one_call(api):
 
 
 def test_missing_key_gives_a_clear_error(monkeypatch):
+    server._recent.clear()
     server.client.cache_clear()
     server._analyze_cached.cache_clear()
 
@@ -112,3 +114,21 @@ def test_presets_and_evidence(api):
     ev = c.get("/api/evidence").json()
     assert ev["tagger"][0]["v2"]["total"] > 0
     assert len(ev["buckets"]) == 3 and len(ev["wrong"]) >= 1
+
+
+def test_visitor_speed_limit(api, monkeypatch):
+    c = api('{"english": "Hi.", "tagalog": "Kumusta."}')
+    monkeypatch.setattr(server, "RATE_LIMIT", 3)
+    codes = [c.post("/api/translate", json={"text": f"hi {i}"}).status_code for i in range(5)]
+    assert codes == [200, 200, 200, 429, 429]
+
+
+def test_website_does_not_need_scikit_learn():
+    """The slim requirements.txt for Vercel has no scikit-learn; make sure the
+    modules the server imports don't load it."""
+    import subprocess
+    import sys
+    code = ("import sys, server; "
+            "print('sklearn' in sys.modules, 'matplotlib' in sys.modules, 'streamlit' in sys.modules)")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "False False False"

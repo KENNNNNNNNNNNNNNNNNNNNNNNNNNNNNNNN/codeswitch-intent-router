@@ -99,19 +99,20 @@ PRESETS = {
 }
 
 
-def analyze_general(text, client, intents=None, model=DEFAULT_MODEL):
+def analyze_general(text, client, intents=None, model=DEFAULT_MODEL, **call_options):
     """Tag with tagger v2, then one LLM call for intent and UNK words.
 
     intents: dict or list of names, or None/empty to skip intent routing.
     If there are no intents and no unknown words, no API call is made.
     """
+    # call_options (e.g. max_retries, wait_seconds) go to llm_client.call_model.
     tagged = tagger_v2.analyse(text)
     tokens = tagged["tokens"]
     unknown = [t.text for t in tokens if t.tag == "UNK"]
     llm = {"intent": None, "confidence": None, "word_languages": {}, "error": "",
            "raw_reply": ""}
     if intents or unknown:
-        llm = analyse_general(client, text, intents, unknown, model=model)
+        llm = analyse_general(client, text, intents, unknown, model=model, **call_options)
 
     filled = []
     for t in tokens:

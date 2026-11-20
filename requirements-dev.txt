@@ -1,0 +1,9 @@
+# Everything for running experiments, tests and the local servers on your computer.
+# The website on Vercel only needs requirements.txt.
+-r requirements.txt
+uvicorn
+httpx
+pytest
+scikit-learn
+matplotlib
+streamlit
