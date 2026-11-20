@@ -6,6 +6,7 @@ Gold sets:
   data/gold_tokens.csv          10 registrar sentences (Day 3, v1 tokenisation)
   data/gold_tokens_general.csv  everyday Taglish sentences, v2 tokenisation
                                 (contractions split, guideline v0.2)
+  data/gold_tokens_hard.csv     verb forms, Taglish verbs and slang
 """
 import sys
 from pathlib import Path
@@ -65,6 +66,13 @@ def main():
         print("v1 cannot split contractions, so it is only scored on sentences "
               "where its tokens line up.")
         score("v1", texts, g, v1_tags)
+        score("v2", texts, g, v2_tags)
+
+    hard = Path("data/gold_tokens_hard.csv")
+    if hard.exists():
+        texts = pd.read_csv("data/gold_sentences_hard.csv").set_index("id")["text"]
+        g = pd.read_csv(hard)
+        print(f"\n=== Harder set: verbs, Taglish verbs and slang ({g['id'].nunique()} sentences) ===")
         score("v2", texts, g, v2_tags)
 
 

@@ -71,11 +71,12 @@ def test_parse_general_reply_ignores_bad_tags():
 # ---- analyze_general ----------------------------------------------------------
 
 def test_unknown_words_are_filled_in_by_the_llm():
+    # "chorva" is slang that is not in the slang list, so the tagger marks it UNK.
     client = FakeClient([json.dumps({"intent": "love_life", "confidence": 0.9,
-                                     "word_languages": {"jowa": "TL"}})])
-    r = analyze_general("Sana all may jowa", client, ["love_life", "other"])
+                                     "word_languages": {"chorva": "TL"}})])
+    r = analyze_general("Sana all may chorva", client, ["love_life", "other"])
     tags = {t["text"]: (t["tag"], t["how"]) for t in r["tokens"]}
-    assert tags["jowa"] == ("TL", "decided by the LLM")
+    assert tags["chorva"] == ("TL", "decided by the LLM")
     assert r["n_unknown"] == 0 and r["intent"] == "love_life"
     assert len(client.calls) == 1  # one call for both jobs
 

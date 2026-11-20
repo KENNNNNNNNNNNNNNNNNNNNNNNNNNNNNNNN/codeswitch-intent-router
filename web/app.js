@@ -238,6 +238,16 @@ function renderResult(r) {
   $("#m-switch dd").innerHTML = `${switches}<small>${r.n_unknown ? `${r.n_unknown} word(s) still unknown` : "all words placed"}</small>`;
 
   renderStream($("#stream"), markJoins(state.lastText || r.text, r.tokens));
+
+  const list = $("#hint-list");
+  list.replaceChildren();
+  (r.hints || []).forEach((h) => {
+    const li = el("li");
+    li.append(el("span", "hint-from", `${h.previous} ${h.word}`), document.createTextNode(" → "),
+      el("span", "hint-to", `${h.previous} ${h.suggestion}`), el("span", "hint-why", h.reason));
+    list.append(li);
+  });
+  $("#hints").hidden = !(r.hints && r.hints.length);
 }
 
 /* ---------- translator (runs automatically after each analysis) ---------- */

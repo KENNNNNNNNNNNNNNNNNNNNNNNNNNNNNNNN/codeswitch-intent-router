@@ -14,6 +14,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from src.grammar_hints import hints
 from src.llm_client import DEFAULT_MODEL, make_client, normalise_intents
 from src.router import PRESETS, analyze_general, decide, preregistered_threshold
 from src.translate import MAX_CHARS, translate_both
@@ -122,6 +123,7 @@ def analyze(body: AnalyzeIn):
 
     rule = preregistered_threshold(RESULTS / "handoff_threshold.csv")
     threshold = rule if body.threshold is None else body.threshold
+    result["hints"] = hints(text)
     result["threshold"] = threshold
     result["calibrated"] = body.preset == "campus_registrar"
     if result["uses_intents"]:
@@ -211,6 +213,12 @@ def tagger_scores():
         texts = pd.read_csv(ROOT / "data/gold_sentences_general.csv").set_index("id")["text"]
         g = pd.read_csv(gpath)
         out.append({"set": "Everyday Taglish", "sentences": int(g["id"].nunique()),
+                    "v1": run(texts, g, t1), "v2": run(texts, g, t2)})
+    hpath = ROOT / "data/gold_tokens_hard.csv"
+    if hpath.exists():
+        texts = pd.read_csv(ROOT / "data/gold_sentences_hard.csv").set_index("id")["text"]
+        g = pd.read_csv(hpath)
+        out.append({"set": "Verbs and slang", "sentences": int(g["id"].nunique()),
                     "v1": run(texts, g, t1), "v2": run(texts, g, t2)})
     return out
 

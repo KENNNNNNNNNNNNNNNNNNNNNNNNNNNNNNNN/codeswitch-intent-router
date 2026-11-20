@@ -82,3 +82,58 @@ def test_v2_matches_v1_on_the_registrar_dataset():
     texts = pd.read_csv("data/taglish_dataset.csv")["text"]
     for text in texts:
         assert [v1.tag_token(t) for t in v1.tokenize(text)] == [t.tag for t in tag_sentence(text)]
+
+
+# ---- slang, Taglish verbs and the optional dictionary ----------------------
+
+@pytest.mark.parametrize("word, tag", [
+    ("jowa", "TL"), ("lodi", "TL"), ("petmalu", "TL"), ("charot", "TL"),
+    ("nmn", "TL"), ("kc", "TL"), ("rizz", "EN"), ("Marites", "TL"),
+])
+def test_slang_list(word, tag):
+    t = tag_sentence(word)[0]
+    assert t.tag == tag and t.how == "slang list"
+
+
+@pytest.mark.parametrize("word", [
+    "nagsho-shopping", "nags-swimming", "magre-review", "magpapa-check",
+    "nakaka-stress", "magdadrive", "nagsheshare", "pa-share", "naka-attend",
+])
+def test_taglish_verbs_take_the_english_root(word):
+    assert tag_sentence(word)[0].tag == "EN"
+
+
+@pytest.mark.parametrize("word", ["manage", "magnet", "pamper", "nagging", "pager"])
+def test_english_words_that_look_like_prefixes_stay_english(word):
+    assert tag_sentence(word)[0].tag == "EN"
+
+
+def test_dictionary_fills_gaps_but_never_overrides_english(monkeypatch):
+    from src import tagger_v2
+    monkeypatch.setattr(tagger_v2, "_dictionary", lambda: frozenset({"luto", "saing", "class"}))
+    tags = {t.text: (t.tag, t.how) for t in tag_sentence("Nagluluto ako, magsasaing ka, may class")}
+    assert tags["Nagluluto"][0] == "TL" and tags["magsasaing"][0] == "TL"
+    assert tags["class"][0] == "EN"  # in the English list, so the dictionary is not used
+
+
+def test_slang_rows_marked_remove_are_ignored(tmp_path, monkeypatch):
+    from src import tagger_v2
+    (tmp_path / "slang.csv").write_text(
+        "word,tag,meaning,kind,source,status\nzorpa,TL,x,y,z,ok\nblip,TL,x,y,z,remove\n", encoding="utf-8")
+    monkeypatch.setattr(tagger_v2, "LEXICON_DIR", tmp_path)
+    tagger_v2._slang.cache_clear()
+    try:
+        assert tagger_v2._slang() == {"zorpa": "TL"}
+    finally:
+        monkeypatch.undo()
+        tagger_v2._slang.cache_clear()
+
+
+@pytest.mark.parametrize("word", ["pera", "tao", "gabi", "lola", "Tito", "kuya", "mahal"])
+def test_tagalog_words_that_leak_into_english_subtitles_stay_tagalog(word):
+    assert tag_sentence(f"may {word} ka")[1].tag == "TL"
+
+
+@pytest.mark.parametrize("word", ["math", "online", "weekend", "appointment", "traffic", "class"])
+def test_english_loanwords_in_tagalog_subtitles_stay_english(word):
+    assert tag_sentence(f"may {word} kami")[1].tag == "EN"

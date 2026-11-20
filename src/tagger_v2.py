@@ -17,9 +17,17 @@ stay reproducible):
 * Words it still cannot place are tagged UNK instead of being guessed as
   English. UNK, like NE, is left out of density. Stage B lets the LLM fill
   them in.
+* A reviewed slang list (data/lexicon/slang.csv) is checked first, and an
+  optional Tagalog dictionary (data/lexicon/tl_dict.txt, built from Wiktionary)
+  fills gaps: it is only used for words the frequency lists don't know, so it
+  can never turn a common English word into Tagalog.
+* Taglish verbs with a repeated syllable are understood: "nagsho-shopping",
+  "magre-review", "magpapa-check" (see docs/tagalog_morphology_notes.md).
 """
+import csv
 import math
 import re
+import unicodedata
 from collections import namedtuple
 from functools import lru_cache
 from pathlib import Path
@@ -31,16 +39,18 @@ Token = namedtuple("Token", "text norm tag how")
 
 LEXICON_DIR = Path(__file__).resolve().parent.parent / "data" / "lexicon"
 
-# A word in both lists is Tagalog if it is at least this many times more
-# frequent (relative to list size) in Tagalog subtitles than in English ones.
-# Below 1 it is English: Taglish speech puts many English words ("class",
-# "meeting") into Tagalog subtitles, but they stay far more common in English.
-# Between 1 and STRONG_RATIO the neighbouring words decide.
+# A word in both lists is Tagalog only if it is at least this many times more
+# frequent (relative to list size) in Tagalog subtitles than in English ones;
+# otherwise it is English. Taglish speech puts many English words ("class",
+# "meeting") into Tagalog subtitles, but they stay far more common in English,
+# while Tagalog words that leak into English subtitles ("pera", "tao") are
+# hundreds of times more common in Tagalog. Words listed in AMBIGUOUS are
+# decided by their neighbours instead.
 STRONG_RATIO = 5.0
 # The Tagalog list is small (about 89,000 words of subtitles), so a word seen
-# only a handful of times there is weak evidence. A word that is also in the
-# English list needs at least this many Tagalog occurrences to be called Tagalog.
-MIN_TL_COUNT = 20
+# only a few times there is weak evidence. A word that is also in the English
+# list needs at least this many Tagalog occurrences to be called Tagalog.
+MIN_TL_COUNT = 10
 
 # Extra Tagalog words not reliably in the frequency list (or too short to trust).
 EXTRA_TL = {
@@ -54,6 +64,9 @@ EXTRA_TL = {
     "mas", "pinaka", "ano", "sino", "saan", "kailan", "bakit", "paano",
     "ilan", "magkano", "alin", "yung", "iyong", "nasa", "wala", "meron",
     "mayroon", "kain", "inom", "tulog", "gutom", "pagod", "busog", "uwi",
+    # family words that also occur as names in English subtitles
+    "nanay", "tatay", "inay", "itay", "ina", "ama", "kuya", "lola", "lolo",
+    "tita", "tito", "bunso", "pinsan", "pera",
 }
 
 # Words common in both languages: decided by the neighbouring words.
@@ -128,6 +141,36 @@ def _lexicon():
     return load("tl_freq.txt"), load("en_freq.txt")
 
 
+@lru_cache(maxsize=1)
+def _slang():
+    """{word: tag} from the slang list. Multi-word phrases are skipped (each
+    word is tagged on its own); rows whose status is "remove" are ignored."""
+    path = LEXICON_DIR / "slang.csv"
+    out = {}
+    if path.exists():
+        with path.open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                word = row["word"].strip().lower()
+                if " " in word or row.get("status", "").strip().lower() == "remove":
+                    continue
+                if row["tag"] in ("EN", "TL", "NE"):
+                    out[word] = row["tag"]
+    return out
+
+
+@lru_cache(maxsize=1)
+def _dictionary():
+    """Tagalog words from the optional Wiktionary-based dictionary."""
+    path = LEXICON_DIR / "tl_dict.txt"
+    if not path.exists():
+        return frozenset()
+    return frozenset(w.strip() for w in path.read_text(encoding="utf-8").splitlines() if w.strip())
+
+
+def strip_accents(word):
+    return "".join(c for c in unicodedata.normalize("NFD", word) if unicodedata.category(c) != "Mn")
+
+
 def word_score(word):
     """log(relative frequency in Tagalog / in English).
 
@@ -152,18 +195,22 @@ def _lookup(word):
 
     Returns (tag, how). tag may be 'AMB' for words common in both languages.
     """
+    slang = _slang().get(word)
+    if slang:
+        return slang, "slang list"
     if word in AMBIGUOUS:
         return "AMB", "common in both languages"
     if word in EXTRA_TL or word in V1_TL_WORDS:
         return "TL", "Tagalog word list"
     score = word_score(word)
     if score is None:
+        plain = strip_accents(word)
+        if word in _dictionary() or plain in _dictionary():
+            return "TL", "Tagalog dictionary (Wiktionary)"
         return None
     if score >= math.log(STRONG_RATIO):
         return "TL", "Tagalog frequency list"
-    if score < 0:
-        return "EN", "English frequency list"
-    return "AMB", "common in both languages"
+    return "EN", "English frequency list"
 
 
 def _roots(word):
@@ -210,6 +257,33 @@ def _roots(word):
     return out
 
 
+def is_prefix_chunk(chunk, root):
+    """True if `chunk` (the part before a hyphen) is Tagalog prefixes, plus at
+    most a short repeated piece: the start of the root ("re" in magre-review,
+    "s"/"sho" in nagsho-shopping) or the prefix's own last syllable repeated
+    ("pa" in magpapa-check, "ka" in nakaka-stress)."""
+    def strip(c, depth=0):
+        if c in PREFIXES or c in BARE_PREFIXES:
+            return [""]
+        rests = []
+        for p in PREFIXES:
+            if c.startswith(p) and len(c) > len(p):
+                rests.append(c[len(p):])
+                if depth < 1:
+                    rests.extend(r for r in strip(c[len(p):], depth + 1) if r is not None)
+        return rests
+    if chunk in PREFIXES or chunk in BARE_PREFIXES:
+        return True
+    for rest in strip(chunk):
+        if rest == "":
+            return True
+        vowels = sum(ch in "aeiou" for ch in rest)
+        if len(rest) <= 3 and vowels <= 1:
+            if root.startswith(rest[0]) or chunk[:-len(rest)].endswith(rest):
+                return True
+    return False
+
+
 def _tag_word(word):
     """(tag, how) for one lowercase word with no apostrophe."""
     if word.isdigit() or word in NE_WORDS:
@@ -221,8 +295,8 @@ def _tag_word(word):
         return found
     if "-" in word:
         parts = word.split("-")
-        if parts[0] in PREFIXES or parts[0] in BARE_PREFIXES:
-            root = "-".join(parts[1:])
+        root = "-".join(parts[1:])
+        if root and is_prefix_chunk(parts[0], root):
             tag, how = _tag_word(root)
             if tag in ("EN", "TL"):
                 return tag, f"root '{root}' decides ({how})"
@@ -235,6 +309,15 @@ def _tag_word(word):
         found = _lookup(root)
         if found and found[0] in ("EN", "TL"):
             return found[0], f"root '{root}' decides ({how.strip()})"
+    # Prefix + repeated first letters of an English root, written as one word:
+    # "magdadrive" = mag + da + drive, "nagsheshare" = nag + she + share.
+    for p in PREFIXES:
+        if word.startswith(p) and len(word) - len(p) >= 5:
+            rest = word[len(p):]
+            for k in (1, 2, 3):
+                piece, root = rest[:k], rest[k:]
+                if len(root) >= 3 and root.startswith(piece[0]) and _lookup(root) and _lookup(root)[0] == "EN":
+                    return "EN", f"root '{root}' decides ({p}- + repeated '{piece}')"
     return "UNK", "not in the word lists"
 
 

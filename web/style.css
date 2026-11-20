@@ -208,8 +208,8 @@ main { max-width: var(--max); margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem) 
 .step:nth-child(4)::before, .step:nth-child(6)::before { background: var(--violet); box-shadow: 0 0 14px var(--violet); }
 .step p { font-size: 0.97rem; }
 .example { color: var(--muted); font-size: 0.9rem !important; margin-bottom: 0; }
-.example .tl { color: var(--gold-soft); font-weight: 600; }
-.example .en { color: var(--violet-soft); font-weight: 600; }
+.step .tl { color: var(--gold-soft); font-weight: 600; }
+.step .en { color: var(--violet-soft); font-weight: 600; }
 
 /* ---- form ---- */
 .field-label { display: block; font-weight: 600; font-size: 0.92rem; margin-bottom: 0.4rem; }
@@ -301,6 +301,14 @@ output { color: var(--gold-soft); font-variant-numeric: tabular-nums; }
   padding: 0.55rem 0.75rem; font-size: 0.85rem; line-height: 1.45; pointer-events: none;
 }
 .tooltip b { color: var(--gold-soft); }
+
+/* ---- formal writing hints ---- */
+.hints { margin-top: 1.4rem; border-top: 1px solid var(--line); padding-top: 1.1rem; }
+.hints ul { list-style: none; margin: 0 0 0.6rem; padding: 0; }
+.hints li { margin-bottom: 0.6rem; }
+.hint-from { text-decoration: line-through; text-decoration-color: var(--violet-soft); color: var(--muted); }
+.hint-to { color: var(--gold-soft); font-weight: 600; }
+.hint-why { display: block; color: var(--muted); font-size: 0.88rem; }
 
 /* ---- translator ---- */
 .translator { margin-top: 1.2rem; }

@@ -57,10 +57,16 @@ def test_analyze_with_preset(api):
 
 
 def test_analyze_with_custom_intents_and_unknown_word(api):
-    c = api(json.dumps({"intent": "love_life", "confidence": 0.8, "word_languages": {"jowa": "TL"}}))
-    r = c.post("/api/analyze", json={"text": "Sana all may jowa", "preset": "custom",
+    c = api(json.dumps({"intent": "love_life", "confidence": 0.8, "word_languages": {"chorva": "TL"}}))
+    r = c.post("/api/analyze", json={"text": "Sana all may chorva", "preset": "custom",
                                      "intents": ["love life", "work"]}).json()
     assert r["intent"] == "love_life" and r["n_unknown"] == 0 and r["calibrated"] is False
+
+
+def test_analyze_returns_formal_writing_hints(api):
+    c = api(json.dumps({"intent": "clearance", "confidence": 0.9}))
+    r = c.post("/api/analyze", json={"text": "Pupunta daw ako sa registrar", "preset": "campus_registrar"}).json()
+    assert r["hints"][0]["suggestion"] == "raw"
 
 
 def test_custom_needs_two_intents(api):
