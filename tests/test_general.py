@@ -118,3 +118,12 @@ def test_translate_end_to_end_with_fake_client():
     r = translate(client, "Ako'y hindi na makapag wait kumain 'cause I am gutom na", "tagalog")
     assert r["translation"].startswith("Hindi na ako") and r["error"] == ""
     assert client.calls[0]["temperature"] == 0
+
+
+def test_parse_both_languages():
+    from src.translate import parse_both
+    assert parse_both('{"english": "Hi.", "tagalog": "Kumusta."}') == (
+        {"english": "Hi.", "tagalog": "Kumusta."}, "")
+    versions, error = parse_both('{"english": "Hi."}')
+    assert versions["tagalog"] is None and "tagalog" in error
+    assert parse_both("no json")[1]

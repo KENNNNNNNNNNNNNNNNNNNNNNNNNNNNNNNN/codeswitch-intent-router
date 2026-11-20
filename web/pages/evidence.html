@@ -1,0 +1,64 @@
+    <section id="evidence" class="section page-first">
+      <div class="section-head">
+        <h2>Evidence</h2>
+        <p>What the tests on this project's data show, and what they can't. All numbers are read
+          from the result files the experiments produced.</p>
+      </div>
+
+      <div class="panel evidence-summary">
+        <h3>In short</h3>
+        <p id="ev-summary">Loading results…</p>
+      </div>
+
+      <div class="evidence-grid">
+        <div class="panel">
+          <h3>Does confidence follow accuracy as the mix rises?</h3>
+          <p class="hint">Zero-shot model on all labelled registrar messages, by language mix.</p>
+          <div id="bucket-chart" class="chart"></div>
+          <ul class="legend" aria-label="Chart legend">
+            <li><span class="chip-key bar-gold"></span>Accuracy</li>
+            <li><span class="chip-key bar-violet"></span>Mean stated confidence</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <h3>Word tagger: old vs new</h3>
+          <p class="hint">Share of words tagged correctly, against hand-labelled sentences.</p>
+          <table class="data" id="tagger-table"></table>
+          <p class="hint">The everyday set was written while the new tagger was being built, so its
+            score is optimistic until checked on fresh sentences.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Prompt strategies on the 16 test messages</h3>
+        <p class="hint">Few-shot prompts show the model 6 labelled examples, one per category,
+          chosen in different ways. One message moves accuracy by 6 points, so these differences are not meaningful.</p>
+        <div class="table-scroll"><table class="data" id="ablation-table"></table></div>
+      </div>
+
+      <div class="evidence-grid">
+        <div class="panel">
+          <h3>Choosing the handoff threshold</h3>
+          <p id="threshold-text" class="hint"></p>
+          <div class="table-scroll"><table class="data" id="coverage-table"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Confident and wrong</h3>
+          <p class="hint">Every wrong answer, most confident first. The model rarely sounds unsure,
+            even when it's wrong.</p>
+          <ul class="gap-list" id="gap-list"></ul>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Limits of this evidence</h3>
+        <ul class="limits">
+          <li>The labelled data is 120 short, synthetic registrar messages, not real student writing.</li>
+          <li>The model made only 5 mistakes on them, too few to show whether mixing languages lowers accuracy.</li>
+          <li>Most mistakes come from two overlapping categories (student records vs document requests), not from code-switching.</li>
+          <li>Only the campus-registrar categories were tested. Other category lists and the translations are untested.</li>
+          <li>Confidence is the number the model states about itself, not a measured probability.</li>
+        </ul>
+      </div>
+    </section>

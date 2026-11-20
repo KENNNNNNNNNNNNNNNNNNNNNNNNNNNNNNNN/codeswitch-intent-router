@@ -4,3 +4,6 @@ streamlit
 scikit-learn
 groq
 matplotlib
+fastapi
+uvicorn
+httpx

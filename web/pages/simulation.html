@@ -1,0 +1,83 @@
+    <section id="simulation" class="section page-first">
+      <div class="section-head">
+        <h2>Simulation</h2>
+        <p>Type or paste a sentence, a phrase or a whole paragraph. After it is analysed, it is also
+          translated into plain English and plain Tagalog.</p>
+      </div>
+
+      <form class="panel sim-form" id="sim-form" novalidate>
+        <label for="msg" class="field-label">Message</label>
+        <textarea id="msg" rows="4" maxlength="2000"
+          placeholder="Ako'y hindi na makapag wait kumain 'cause I am gutom na"></textarea>
+        <div class="row-between">
+          <span class="hint" id="char-count">0 / 2000</span>
+          <button type="button" class="link-btn" id="use-example">Try an example</button>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label for="preset" class="field-label">Sort messages into</label>
+            <select id="preset">
+              <option value="campus_registrar">Campus registrar (tested)</option>
+              <option value="customer_support">Customer support (example)</option>
+              <option value="barangay_health">Barangay health (example)</option>
+              <option value="custom">My own categories</option>
+              <option value="none">Don't sort, just analyse the language</option>
+            </select>
+          </div>
+          <div class="control" id="custom-wrap" hidden>
+            <label for="custom" class="field-label">Your categories, separated by commas</label>
+            <input id="custom" type="text" placeholder="billing, delivery, complaint, other">
+          </div>
+          <div class="control" id="threshold-wrap">
+            <label for="threshold" class="field-label">Hand off when confidence is below
+              <output id="threshold-out">0.00</output></label>
+            <input id="threshold" type="range" min="0" max="1" step="0.01" value="0">
+            <p class="hint" id="threshold-note"></p>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-gold" id="analyze-btn">Analyse message</button>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </form>
+
+      <div class="panel results" id="results" hidden aria-live="polite">
+        <div class="verdict" id="verdict"></div>
+        <dl class="metrics">
+          <div class="metric" id="m-intent"><dt>Intent</dt><dd>–</dd></div>
+          <div class="metric" id="m-conf"><dt>Confidence</dt><dd>–</dd><div class="bar"><span></span></div></div>
+          <div class="metric" id="m-density"><dt>Language mix</dt><dd>–</dd><div class="bar mix"><span></span></div></div>
+          <div class="metric" id="m-switch"><dt>Language switches</dt><dd>–</dd></div>
+        </dl>
+        <h3 class="h-small">Word by word</h3>
+        <div class="stream" id="stream"></div>
+        <ul class="legend" aria-label="Legend">
+          <li><span class="chip-key tl"></span>Tagalog</li>
+          <li><span class="chip-key en"></span>English</li>
+          <li><span class="chip-key ne"></span>Name or number</li>
+          <li><span class="chip-key unk"></span>Unknown</li>
+          <li><span class="switch-key"></span>Language switch</li>
+          <li><span class="llm-key">AI</span>Tagged by the model</li>
+        </ul>
+        <p class="hint">Hover over or focus a word to see why it got its tag.</p>
+      </div>
+
+      <div class="panel translator" id="translator" hidden aria-live="polite">
+        <div class="row-between">
+          <h3 class="h-small">The same message in one language</h3>
+          <div class="segmented" role="radiogroup" aria-label="Show the translation in">
+            <label><input type="radio" name="target" value="english" checked><span>English</span></label>
+            <label><input type="radio" name="target" value="tagalog"><span>Tagalog</span></label>
+          </div>
+        </div>
+        <div class="translation-box" id="translation-box">
+          <p id="translation-text" lang="en"></p>
+        </div>
+        <div class="row-between">
+          <span class="hint" id="translation-status">Machine translation. Not checked by a person.</span>
+          <button type="button" class="link-btn" id="copy-btn">Copy</button>
+        </div>
+        <p class="form-error" id="translate-error" role="alert" hidden></p>
+      </div>
+    </section>
+

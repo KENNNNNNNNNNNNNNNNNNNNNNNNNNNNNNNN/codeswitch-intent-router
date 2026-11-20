@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='4' width='10' height='24' rx='5' fill='%23e2b33c'/%3E%3Crect x='17' y='4' width='10' height='24' rx='5' fill='%23b347ff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Unbounded:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="{{page}}">
+  {{backdrop}}
+
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Taglish Router home">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+      Taglish Router
+    </a>
+    <nav aria-label="Pages">
+      <a href="/how"{{current_how}}>How it works</a>
+      <a href="/simulation"{{current_simulation}}>Simulation</a>
+      <a href="/evidence"{{current_evidence}}>Evidence</a>
+    </nav>
+    <span class="header-spacer" aria-hidden="true"></span>
+  </header>
+
+  <main>
+{{content}}
+  </main>
+
+  <footer class="site-footer">
+    <p>Taglish Router, a student research project. Model: <span id="model-name">openai/gpt-oss-120b</span> via Groq.
+      Word lists from FrequencyWords (CC BY-SA 4.0).</p>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
