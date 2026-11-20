@@ -252,16 +252,18 @@ Share of words tagged correctly against hand-labelled gold tokens
 |---|---|---|---|---|
 | Registrar, 10 sentences | 97/97 | 97/97 | 97/97 | 97/97 |
 | Everyday Taglish, 23 sentences | 101/136* | 174/177 | 175/177 | 175/177 |
-| Verbs and slang, 20 sentences | – | 134/162 (23 unknown) | 153/162 (8 unknown) | **160/162 (1 unknown)** |
+| Verbs and slang, 20 sentences | – | 134/162 (23 unknown) | 153/162 (8 unknown) | **161/162 (1 unknown)** |
 
 \* v1 cannot split contractions, so 5 sentences could not be scored at all.
 
 - v2 tags all 120 registrar sentences exactly as v1 does, so the Day 1–7
   densities and results are unchanged.
 - **These scores are optimistic.** The everyday and verbs-and-slang sentences
-  and their gold tags were written while the tagger was being built, and still
-  need review by a native speaker. A fresh set written by someone else is the
-  honest test.
+  were written while the tagger was being built. Their gold tags have been
+  reviewed by a native speaker (one correction: "Mama" is TL, after which
+  "mama"/"papa" were added to the tagger's family words), but the tagger was
+  still tuned while looking at these sentences. A fresh set written by someone
+  else is the honest test.
 - The dictionary covers 98,575 word forms from 40,946 Wiktionary entries
   (1,847 English borrowings and 5,391 proper names left out). It is only used
   for words the frequency lists don't know, so it cannot turn a common English
@@ -298,8 +300,9 @@ Additional limitations of the general-use extension:
   anything other than the registrar preset are untested.
 - Translations are not evaluated anywhere in this project. The app labels them
   as machine translations not checked by a person.
-- The slang list (`data/lexicon/slang.csv`) is a draft: many rows come from
-  general knowledge rather than a cited source, and slang changes quickly.
+- The slang list (`data/lexicon/slang.csv`) was reviewed by one native speaker
+  (November 2026). Many rows come from general knowledge rather than a cited
+  source, and slang changes quickly, so it will go out of date.
 - Names that are also common English words (for example "Ana", "Ben") are
   tagged English, not NE.
 - Some complex verb forms (for example "nagkukuwentuhan", where the root's

@@ -129,7 +129,7 @@ def test_slang_rows_marked_remove_are_ignored(tmp_path, monkeypatch):
         tagger_v2._slang.cache_clear()
 
 
-@pytest.mark.parametrize("word", ["pera", "tao", "gabi", "lola", "Tito", "kuya", "mahal"])
+@pytest.mark.parametrize("word", ["pera", "tao", "gabi", "lola", "Tito", "kuya", "mahal", "Mama"])
 def test_tagalog_words_that_leak_into_english_subtitles_stay_tagalog(word):
     assert tag_sentence(f"may {word} ka")[1].tag == "TL"
 

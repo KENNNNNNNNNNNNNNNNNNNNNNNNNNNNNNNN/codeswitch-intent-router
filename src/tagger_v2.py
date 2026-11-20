@@ -66,7 +66,7 @@ EXTRA_TL = {
     "mayroon", "kain", "inom", "tulog", "gutom", "pagod", "busog", "uwi",
     # family words that also occur as names in English subtitles
     "nanay", "tatay", "inay", "itay", "ina", "ama", "kuya", "lola", "lolo",
-    "tita", "tito", "bunso", "pinsan", "pera",
+    "tita", "tito", "bunso", "pinsan", "pera", "mama", "papa",
 }
 
 # Words common in both languages: decided by the neighbouring words.
