@@ -139,3 +139,108 @@ def classify(client, text, model=DEFAULT_MODEL, examples=None, **kwargs):
     reply = call_model(client, build_messages(text, examples), model=model, **kwargs)
     intent, confidence, error = parse_reply(reply)
     return {"pred": intent, "confidence": confidence, "parse_error": error, "raw_reply": reply}
+
+
+# ---------------------------------------------------------------------------
+# General use (after Day 7): any intent list, plus tagging the words the
+# offline tagger could not place. The research prompt above is unchanged.
+# ---------------------------------------------------------------------------
+
+GENERAL_PROMPT_VERSION = "general-v1"
+MAX_INTENTS = 20
+
+GENERAL_SYSTEM_PROMPT = """You analyse messages that may be in English, Tagalog, \
+or a mix of both (Taglish), written the way Filipinos text and chat.
+{intent_part}{unknown_part}
+Reply with only a JSON object, no other text:
+{json_shape}"""
+
+INTENT_PART = """
+Task 1. Choose exactly one intent for the message:
+{intent_list}
+"confidence" is your probability (0 to 1) that the chosen intent is correct.
+"""
+
+UNKNOWN_PART = """
+Task {n}. For each of these words from the message, say which language it is in:
+{words}
+Use "EN" (English), "TL" (Tagalog or Filipino, including slang such as "jowa"),
+or "NE" (a name, brand or other language-independent word).
+"""
+
+
+def normalise_intents(intents):
+    """Accept a dict {name: description} or a list of names.
+
+    Names become lowercase_with_underscores. A missing description becomes
+    the name itself. Raises ValueError if there are too many or duplicates.
+    """
+    if isinstance(intents, dict):
+        items = list(intents.items())
+    else:
+        items = [(name, "") for name in intents]
+    out = {}
+    for name, desc in items:
+        key = re.sub(r"\s+", "_", str(name).strip().lower())
+        if not key:
+            continue
+        if key in out:
+            raise ValueError(f"duplicate intent: {key}")
+        out[key] = (desc or "").strip() or key.replace("_", " ")
+    if len(out) > MAX_INTENTS:
+        raise ValueError(f"at most {MAX_INTENTS} intents")
+    return out
+
+
+def build_general_messages(text, intents, unknown_words):
+    """Prompt for the general analysis. Either part may be empty, not both."""
+    intents = normalise_intents(intents) if intents else {}
+    unknown_words = list(dict.fromkeys(unknown_words))
+    if not intents and not unknown_words:
+        raise ValueError("nothing to ask the model")
+    shape = {}
+    intent_part = unknown_part = ""
+    if intents:
+        intent_part = INTENT_PART.format(intent_list=intent_list_text(intents))
+        shape.update({"intent": "<one intent name>", "confidence": "<number 0-1>"})
+    if unknown_words:
+        unknown_part = UNKNOWN_PART.format(
+            n=2 if intents else 1, words=", ".join(f'"{w}"' for w in unknown_words))
+        shape["word_languages"] = {w: "<EN|TL|NE>" for w in unknown_words[:2]}
+        if len(unknown_words) > 2:
+            shape["word_languages"]["..."] = "..."
+    system = GENERAL_SYSTEM_PROMPT.format(
+        intent_part=intent_part, unknown_part=unknown_part,
+        json_shape=json.dumps(shape))
+    return [{"role": "system", "content": system}, {"role": "user", "content": text}]
+
+
+def parse_general_reply(reply, intents, unknown_words):
+    """Returns dict: intent, confidence, word_languages, error."""
+    intents = normalise_intents(intents) if intents else {}
+    result = {"intent": None, "confidence": None, "word_languages": {}, "error": ""}
+    if intents:
+        intent, confidence, error = parse_reply(reply, intents)
+        result.update(intent=intent, confidence=confidence, error=error)
+    match = re.search(r"\{.*\}", reply or "", re.DOTALL)
+    try:
+        data = json.loads(match.group(0)) if match else {}
+    except json.JSONDecodeError:
+        data = {}
+    langs = data.get("word_languages", {}) if isinstance(data, dict) else {}
+    if isinstance(langs, dict):
+        wanted = {w.lower(): w for w in unknown_words}
+        for word, tag in langs.items():
+            tag = str(tag).strip().upper()
+            if str(word).lower() in wanted and tag in ("EN", "TL", "NE"):
+                result["word_languages"][wanted[str(word).lower()]] = tag
+    if unknown_words and not result["word_languages"] and not result["error"]:
+        result["error"] = "no word languages in reply"
+    return result
+
+
+def analyse_general(client, text, intents, unknown_words, model=DEFAULT_MODEL, **kwargs):
+    """One API call: intent + confidence (if intents) and tags for unknown words."""
+    reply = call_model(client, build_general_messages(text, intents, unknown_words),
+                       model=model, **kwargs)
+    return {**parse_general_reply(reply, intents, unknown_words), "raw_reply": reply}
